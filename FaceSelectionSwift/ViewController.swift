@@ -14,11 +14,13 @@ class ViewController: UIViewController {
     var m_faceInfo : [DetectResultModel] = []
     var m_selectedFaceId : String?
     var m_imageView : UIImageView = UIImageView()
+    var m_textView : UITextView = UITextView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
         self.view.addSubview(m_imageView)
+        self.view.addSubview(m_textView)
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.imageTapped(gesture:)))
         
@@ -121,6 +123,10 @@ class ViewController: UIViewController {
             
             let frameRect = self.CalculateFrameRect(view:self.view, image:paintedImage!)
             self.m_imageView.frame = frameRect
+            
+            let textTop = frameRect.origin.y + frameRect.height
+            let textHeight = self.view.bounds.height - textTop
+            self.m_textView.frame = CGRect(x: 0, y: textTop, width: self.view.bounds.width, height: textHeight)
         }
     }
     
@@ -130,6 +136,56 @@ class ViewController: UIViewController {
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+    }
+    
+    func getMainEmotion(faceInfo: DetectResultModel) -> String {
+        var emotionStr = "Happiness";
+        var emotionValue : Float = 0.0
+        let emotion = faceInfo.faceAttributes.emotion
+        
+        if(emotion.anger > emotionValue) {
+            emotionStr = "Anger"
+            emotionValue = emotion.anger
+        }
+        if(emotion.contempt > emotionValue) {
+            emotionStr = "Contempt"
+            emotionValue = emotion.contempt
+        }
+        if(emotion.disgust > emotionValue) {
+            emotionStr = "Disgust"
+            emotionValue = emotion.disgust
+        }
+        if(emotion.fear > emotionValue) {
+            emotionStr = "Fear"
+            emotionValue = emotion.fear
+        }
+        if(emotion.happiness > emotionValue) {
+            emotionStr = "Happiness"
+            emotionValue = emotion.happiness
+        }
+        
+        if(emotion.neutral > emotionValue) {
+            emotionStr = "Neutral"
+            emotionValue = emotion.neutral
+        }
+        
+        if(emotion.sadness > emotionValue) {
+            emotionStr = "Sadness"
+            emotionValue = emotion.sadness
+        }
+        
+        if(emotion.surprise > emotionValue) {
+            emotionStr = "Surprise"
+            emotionValue = emotion.surprise
+        }
+        
+        return emotionStr;
+    }
+    
+    func calculateFaceOccupation(image : UIImage, faceInfo : DetectResultModel) -> Float {
+        let faceArea : Float = Float(faceInfo.faceRectangle.width * faceInfo.faceRectangle.height);
+        let imageArea : Float = Float(image.size.width * image.size.height);
+        return (faceArea / imageArea) * 100.0;
     }
 
     @objc func imageTapped(gesture: UIGestureRecognizer) {
@@ -143,6 +199,13 @@ class ViewController: UIViewController {
             
             if(rect.contains(scaledPt)) {
                 m_selectedFaceId = faceInfo.faceId;
+                let emotion = getMainEmotion(faceInfo: faceInfo)
+                let occupationPct = calculateFaceOccupation(image: m_sourceImage!, faceInfo: faceInfo)
+                var desc = "Gender: \(faceInfo.faceAttributes.gender)\n"
+                desc += "Age: \(faceInfo.faceAttributes.age)\n"
+                desc += "Emotion: \(emotion)\n"
+                desc += "Face Occupation: \(occupationPct)%\n"
+                m_textView.text = desc;
                 DrawBoundingBoxes();
                 break;
             }
