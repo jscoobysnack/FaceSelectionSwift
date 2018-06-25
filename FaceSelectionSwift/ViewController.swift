@@ -13,8 +13,8 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let testImageURL = "https://cdn.lifehack.org/wp-content/uploads/2017/04/03062502/happy.001.jpeg"
-        let testImageMetaDataURL = "https://jsonplaceholder.typicode.com/posts/1"
+        let testImageURL = "https://s3-us-west-2.amazonaws.com/precious-interview/ios-face-selection/family.jpg"
+        let testImageMetaDataURL = "https://s3-us-west-2.amazonaws.com/precious-interview/ios-face-selection/family_faces.json"
         
         AssetFetcher.fetch(URL: URL(string: testImageURL)!, OnFetched: onFetched, OnError: onAssetError)
         AssetFetcher.fetch(URL: URL(string: testImageMetaDataURL)!, OnFetched: onFetchedJson, OnError: onAssetError)
@@ -34,7 +34,14 @@ class ViewController: UIViewController {
     }
     
     func onFetchedJson(imageMetaData: Data?) {
-
+        //print("Meta Data: \(imageMetaData)")
+        guard let detectResult = try? JSONDecoder().decode([DetectResultModel].self, from: imageMetaData!) else {
+            let dataStr = String(data: imageMetaData!, encoding: String.Encoding.utf8)
+            print("Error: Couldn't decode data into DetectResultModel\n \(dataStr!)")
+            return
+        }
+        
+        print("Face ID: \(detectResult[0].faceId)")
     }
     
     func onAssetError(fileName : String, errorMsg: String) {
