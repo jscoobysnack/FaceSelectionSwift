@@ -20,6 +20,12 @@ struct FaceLandmarkCoordinate : Decodable {
     let y: Float
 }
 
+struct HeadPose : Decodable {
+    let pitch : Float
+    let roll : Float
+    let yaw : Float
+}
+
 struct FaceEmotion : Decodable {
     let anger : Float
     let contempt : Float
@@ -35,6 +41,7 @@ struct FaceAttributes : Decodable {
     let gender : String
     let age : Float
     let emotion : FaceEmotion
+    let headPose : HeadPose
 }
 
 struct DetectResultModel : Decodable {

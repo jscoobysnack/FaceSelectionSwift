@@ -27,4 +27,22 @@ class ImageDrawing {
         
         return resultImage
     }
+    
+    class func drawDotOnImage(image: UIImage, pt: CGPoint, color: CGColor, lineWidth: CGFloat) -> UIImage? {
+        UIGraphicsBeginImageContext(image.size)
+        let context = UIGraphicsGetCurrentContext()
+        
+        let halfWidth = lineWidth / 2.0
+
+        image.draw(at:CGPoint.zero)
+        context!.setLineWidth(lineWidth)
+        context!.setFillColor(color)
+        context!.fill(CGRect(x:pt.x - halfWidth, y:pt.y - halfWidth, width: lineWidth, height: lineWidth))
+        context!.strokePath()
+        
+        let resultImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return resultImage
+    }
 }

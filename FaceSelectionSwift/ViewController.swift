@@ -40,7 +40,7 @@ class ViewController: UIViewController {
         
         m_sourceImage = image
         
-        DrawBoundingBoxes()
+        DrawImageInfo()
     }
     
     func onFetchedJson(imageMetaData: Data?) {
@@ -93,7 +93,18 @@ class ViewController: UIViewController {
         }
     }
     
-    func DrawBoundingBoxes() {
+    func rotatePoint(target: CGPoint, aroundOrigin origin: CGPoint, byDegrees: CGFloat) -> CGPoint {
+        let dx = target.x - origin.x
+        let dy = target.y - origin.y
+        let radius = sqrt(dx * dx + dy * dy)
+        let azimuth = atan2(dy, dx) // in radians
+        let newAzimuth = azimuth + byDegrees * CGFloat(.pi / 180.0) // convert it to radians
+        let x = origin.x + radius * cos(newAzimuth)
+        let y = origin.y + radius * sin(newAzimuth)
+        return CGPoint(x: x, y: y)
+    }
+    
+    func DrawImageInfo() {
         if(m_faceInfo.count == 0 || m_sourceImage == nil)
         {
             print("Data not fetched yet.")
@@ -110,13 +121,32 @@ class ViewController: UIViewController {
                 let bl = CGPoint(x:faceInfo.faceRectangle.left, y:faceInfo.faceRectangle.top + faceInfo.faceRectangle.height)
                 let br = CGPoint(x:faceInfo.faceRectangle.left + faceInfo.faceRectangle.width, y:faceInfo.faceRectangle.top + faceInfo.faceRectangle.height)
                 let tr = CGPoint(x:faceInfo.faceRectangle.left + faceInfo.faceRectangle.width, y:faceInfo.faceRectangle.top)
+                
+                let r = CGFloat(faceInfo.faceAttributes.headPose.roll)// * .pi / 180
+                let halfWidth = CGFloat(faceInfo.faceRectangle.width) / 2.0
+                let halfHeight = CGFloat(faceInfo.faceRectangle.height) / 2.0
+                let centerX = CGFloat(tl.x) + halfWidth
+                let centerY = CGFloat(tl.y) + halfHeight
+                let centerPt = CGPoint(x: centerX, y: centerY)
+                
+                let rtl = self.rotatePoint(target:tl, aroundOrigin:centerPt, byDegrees:r)
+                let rbl = self.rotatePoint(target:bl, aroundOrigin:centerPt, byDegrees:r)
+                let rbr = self.rotatePoint(target:br, aroundOrigin:centerPt, byDegrees:r)
+                let rtr = self.rotatePoint(target:tr, aroundOrigin:centerPt, byDegrees:r)
+                
                 let color = faceInfo.faceAttributes.gender == "male" ? UIColor.blue.cgColor : pink
                 let lineWidth : CGFloat = self.m_selectedFaceId == faceInfo.faceId ? 5.0 : 2.0
                 
-                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: tl, to: bl, color: color, lineWidth: lineWidth)
-                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: bl, to: br, color: color, lineWidth: lineWidth)
-                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: br, to: tr, color: color, lineWidth: lineWidth)
-                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: tr, to: tl, color: color, lineWidth: lineWidth)
+                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: rtl, to: rbl, color: color, lineWidth: lineWidth)
+                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: rbl, to: rbr, color: color, lineWidth: lineWidth)
+                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: rbr, to: rtr, color: color, lineWidth: lineWidth)
+                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: rtr, to: rtl, color: color, lineWidth: lineWidth)
+                
+                for landmark in faceInfo.faceLandmarks {
+                    let pt = CGPoint(x:Int(landmark.value.x), y:Int(landmark.value.y))
+                    let dotColor = UIColor.green.cgColor
+                    paintedImage = ImageDrawing.drawDotOnImage(image: paintedImage!, pt: pt, color: dotColor, lineWidth: 2.0)
+                }
             }
             
             self.m_imageView.image = paintedImage!
@@ -206,7 +236,7 @@ class ViewController: UIViewController {
                 desc += "Emotion: \(emotion)\n"
                 desc += "Face Occupation: \(occupationPct)%\n"
                 m_textView.text = desc;
-                DrawBoundingBoxes();
+                DrawImageInfo();
                 break;
             }
         }
