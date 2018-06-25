@@ -11,12 +11,12 @@ import UIKit
 
 class ImageDrawing {
 
-    class func drawLineOnImage(image: UIImage, from: CGPoint, to: CGPoint, color: CGColor) -> UIImage? {
+    class func drawLineOnImage(image: UIImage, from: CGPoint, to: CGPoint, color: CGColor, lineWidth: CGFloat) -> UIImage? {
         UIGraphicsBeginImageContext(image.size)
         let context = UIGraphicsGetCurrentContext()
         
         image.draw(at:CGPoint.zero)
-        context!.setLineWidth(2.0)
+        context!.setLineWidth(lineWidth)
         context!.setStrokeColor(color)
         context!.move(to:from)
         context!.addLine(to:to)

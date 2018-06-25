@@ -13,9 +13,17 @@ class ViewController: UIViewController {
     var m_sourceImage : UIImage?
     var m_faceInfo : [DetectResultModel] = []
     var m_selectedFaceId : String?
+    var m_imageView : UIImageView = UIImageView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.view.addSubview(m_imageView)
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.imageTapped(gesture:)))
+        
+        m_imageView.addGestureRecognizer(tapGesture)
+        m_imageView.isUserInteractionEnabled = true
         
         let testImageURL = "https://s3-us-west-2.amazonaws.com/precious-interview/ios-face-selection/family.jpg"
         let testImageMetaDataURL = "https://s3-us-west-2.amazonaws.com/precious-interview/ios-face-selection/family_faces.json"
@@ -43,6 +51,29 @@ class ViewController: UIViewController {
         
         m_faceInfo = detectResult
         print("Face ID: \(detectResult[0].faceId)")
+    }
+    
+    func ConvertScreenPointToImageSpace(pt: CGPoint, view : UIView, image: UIImage) -> CGPoint {
+        let viewAspect = view.bounds.size.width / view.bounds.size.height
+        let imageAspect = image.size.width / image.size.height
+        
+        var widthScale : CGFloat = 0.0
+        var heightScale : CGFloat = 0.0
+        
+        if(viewAspect > imageAspect) {
+            let newWidth = view.bounds.size.height * imageAspect
+            let newHeight = view.bounds.size.height
+            widthScale = image.size.width / newWidth
+            heightScale = image.size.height / newHeight
+        }
+        else {
+            let newWidth = view.bounds.size.width
+            let newHeight = newWidth / imageAspect
+            widthScale = image.size.width / newWidth
+            heightScale = image.size.height / newHeight
+        }
+        
+        return CGPoint(x: pt.x * widthScale, y: pt.y * heightScale)
     }
     
     func CalculateFrameRect(view : UIView, image: UIImage) -> CGRect {
@@ -77,18 +108,19 @@ class ViewController: UIViewController {
                 let bl = CGPoint(x:faceInfo.faceRectangle.left, y:faceInfo.faceRectangle.top + faceInfo.faceRectangle.height)
                 let br = CGPoint(x:faceInfo.faceRectangle.left + faceInfo.faceRectangle.width, y:faceInfo.faceRectangle.top + faceInfo.faceRectangle.height)
                 let tr = CGPoint(x:faceInfo.faceRectangle.left + faceInfo.faceRectangle.width, y:faceInfo.faceRectangle.top)
-                
                 let color = faceInfo.faceAttributes.gender == "male" ? UIColor.blue.cgColor : pink
-                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: tl, to: bl, color: color)
-                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: bl, to: br, color: color)
-                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: br, to: tr, color: color)
-                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: tr, to: tl, color: color)
+                let lineWidth : CGFloat = self.m_selectedFaceId == faceInfo.faceId ? 5.0 : 2.0
+                
+                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: tl, to: bl, color: color, lineWidth: lineWidth)
+                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: bl, to: br, color: color, lineWidth: lineWidth)
+                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: br, to: tr, color: color, lineWidth: lineWidth)
+                paintedImage = ImageDrawing.drawLineOnImage(image: paintedImage!, from: tr, to: tl, color: color, lineWidth: lineWidth)
             }
-            let imageView = UIImageView(image: paintedImage!)
+            
+            self.m_imageView.image = paintedImage!
             
             let frameRect = self.CalculateFrameRect(view:self.view, image:paintedImage!)
-            imageView.frame = frameRect
-            self.view.addSubview(imageView)
+            self.m_imageView.frame = frameRect
         }
     }
     
@@ -100,6 +132,23 @@ class ViewController: UIViewController {
         super.didReceiveMemoryWarning()
     }
 
-
+    @objc func imageTapped(gesture: UIGestureRecognizer) {
+        let pt = gesture.location(ofTouch: 0, in: self.view)
+        let scaledPt = self.ConvertScreenPointToImageSpace(pt: pt, view: self.view, image: m_sourceImage!)
+        for faceInfo in self.m_faceInfo {
+            let rect = CGRect(x: faceInfo.faceRectangle.left,
+                              y: faceInfo.faceRectangle.top,
+                              width: faceInfo.faceRectangle.width,
+                              height: faceInfo.faceRectangle.height)
+            
+            if(rect.contains(scaledPt)) {
+                m_selectedFaceId = faceInfo.faceId;
+                DrawBoundingBoxes();
+                break;
+            }
+        }
+        
+        print("Gesture: \(pt)" )
+    }
 }
 
