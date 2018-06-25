@@ -20,9 +20,13 @@ struct FaceLandmarkCoordinate : Decodable {
     let y: Float
 }
 
+struct FaceAttributes : Decodable {
+    let gender : String
+}
+
 struct DetectResultModel : Decodable {
     let faceId: String
     let faceRectangle: DetectRectangle
-    //let faceAttributes : String = "Not used"
+    let faceAttributes : FaceAttributes
     let faceLandmarks : [String: FaceLandmarkCoordinate]
 }
